@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Room</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-blue-200 flex items-center justify-center h-screen">
+    <div class="bg-white p-10 rounded-lg shadow-lg max-w-md">
+        <textarea id="audio-log" rows="10" class="w-full border-2 border-blue-500 rounded-lg py-2 px-4 mb-4 focus:outline-none focus:border-blue-700 text-blue-700" readonly></textarea>
+        <input id="audio-message-input" type="text" placeholder="Type your message" class="w-full border-2 border-blue-500 rounded-lg py-2 px-4 mb-4 focus:outline-none focus:border-blue-700 text-blue-700">
+        <button id="audio-message-submit" type="button" class="bg-blue-500 text-white px-8 py-2 rounded-lg hover:bg-blue-600 focus:outline-none">Send</button>
+        {{ room_name|json_script:"room-name" }}
+    </div>
+
+    <script>
+        const roomName = JSON.parse(document.getElementById('room-name').textContent);
+        const socket_url = 'wss://' + window.location.host + '/wss/audio/' + roomName + '/'
+
+        const audioSocket = new WebSocket(socket_url);
+
+        console.log("XNXX", socket_url);
+
+        audioSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            console.log(data);
+            document.querySelector('#audio-log').value += (data.message + '\n');
+        };
+
+        audioSocket.onclose = function(e) {
+            console.error('Audio socket closed unexpectedly');
+        };
+
+        document.querySelector('#audio-message-input').focus();
+        document.querySelector('#audio-message-input').onkeyup = function(e) {
+            if (e.key === 'Enter') {
+                document.querySelector('#audio-message-submit').click();
+            }
+        };
+
+        document.querySelector('#audio-message-submit').onclick = function(e) {
+            const messageInputDom = document.querySelector('#audio-message-input');
+            const message = messageInputDom.value;
+            audioSocket.send(JSON.stringify({
+                'message': message
+            }));
+            messageInputDom.value = '';
+        };
+    </script>
+</body>
+</html>
